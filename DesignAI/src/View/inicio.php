@@ -268,6 +268,28 @@ if (empty($_SESSION['Cuenta_Activa'])){ //si no hay una sesion activa
         view.style.display = 'grid';
       }
 
+
+      function next(process) { //cambiar a session para actualizar o confirmar eliminacion
+        next_process = document.getElementById(process); //seccion a mostrar
+        interfaz_actual = document.getElementById('dataperfil'); //seccion a ocultar
+        iconoclose = document.getElementById('icono_close'); //icono de close
+
+        next_process.style.display = 'flex';
+        interfaz_actual.style.display = 'none';
+        icono_close.style.display = 'none';
+      }
+
+      function cancel(process) { //boton para cancelar proceso
+        next_process = document.getElementById(process); //seccion a ocultar
+        interfaz_actual = document.getElementById('dataperfil'); //seccion a mostrar
+        iconoclose = document.getElementById('icono_close'); //icono de close
+
+        next_process.style.display = 'none';
+        interfaz_actual.style.display = 'flex';
+        icono_close.style.display = 'flex';
+      }
+
+
       /*Alertas*/
       let cont_Error = document.getElementById('Cont_Error');
 
@@ -303,7 +325,30 @@ if (empty($_SESSION['Cuenta_Activa'])){ //si no hay una sesion activa
             }
           });
         });
+
+        //Enviar el dato de la nueva foto de perfil
+        $('#BotonUpdate').click(function() {
+          var dataupdate = new FormData(document.querySelector('#process_update'));
+          // Realizar la petición AJAX
+          $.ajax({
+            type: 'POST',
+            url: '../Controller/UpdateForm.php', // Archivo PHP para procesar los datos en el servidor
+            data: dataupdate, // Se envia el dato
+            processData: false,
+            contentType: false,
+            success: function(response) {
+              // Manejar la respuesta del servidor aquí
+              if (response == 0) {
+                mensaje_Alerta('Error, Intente Nuevamente');
+              } else {
+                mensaje_Alerta('Perfil Actualizado');
+              }
+            }
+          });
+        });
+
       });
+
 
 
       function aplicarAtributos() {
@@ -321,7 +366,27 @@ if (empty($_SESSION['Cuenta_Activa'])){ //si no hay una sesion activa
           mensaje_Alerta('Error al aplicar atributos CSS.');
         }
       }
+
+
+      // Obtener referencias a los elementos del formulario
+      const inputFotoPerfil = document.getElementById('UpdateFoto');
+      const fotoPerfil = document.getElementById('PrevisualizacionFoto');
+      
+      inputFotoPerfil.addEventListener('change', function () { //al detectar un cambio en el input
+      const archivo = inputFotoPerfil.files[0]; //obtiene informacion del file
+        if (archivo) {
+          const reader = new FileReader();
+          
+          reader.onload = function () { //funcion de mostrar nuevo file
+            fotoPerfil.src = reader.result;
+          };
+          
+          reader.readAsDataURL(archivo); //muestra el file seleccionado
+        }
+
+      });
     </script>
+
   </body>
 </html>
 
@@ -331,4 +396,37 @@ if (isset($_POST['logout'])){
   //nos redirige al index
   echo '<script>window.location.href = "http://localhost/sandovalpenaluisenriqueUnidad3/DesignAI/index.php";</script>';
 }
+
+if (isset($_POST['delete_count'])){
+  // Datos del usuario a eliminar
+  $idUsuarioEliminar = $dataUser[0]['id'];
+  // Configuración de la solicitud cURL
+  $curl = curl_init();
+  // Configura la URL del servicio web
+  $url = 'http://localhost/API/web-service.php?id=' . $idUsuarioEliminar;
+  // Configura otras opciones cURL según sea necesario
+  curl_setopt($curl, CURLOPT_URL, $url);
+  curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'DELETE');
+  curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+  
+  // Realiza la solicitud cURL y obtiene la respuesta
+  $response = curl_exec($curl);
+  
+  // Verifica si la solicitud fue exitosa
+  if (curl_getinfo($curl, CURLINFO_HTTP_CODE) == 200) {
+    session_destroy(); //desturimos la sesion
+    //nos redirige al index
+    echo '<script>
+      window.location.href = "http://localhost/sandovalpenaluisenriqueUnidad3/DesignAI/index.php";
+    </script>';
+  } else { //si no alerta
+    echo '<script>
+      mensaje_Alerta("Error al Eliminar la Cuenta");
+    </script>';
+  }
+  
+  // Cierra la sesión cURL
+  curl_close($curl);
+}
+
 ?>
